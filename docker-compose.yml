@@ -1,0 +1,19 @@
+version: '3.8' # Specify docker-compose version
+
+services:
+  jukebox: # Name of the service/container
+    build: . # Build the image from the Dockerfile in the current directory
+    ports:
+      - "8000:8000" # Map port 8000 on the host machine to port 8000 in the container
+    volumes:
+      # Mount the MASTER PLAYLIST.xml from the host into the container
+      # This allows you to update the XML file on your host machine
+      # without rebuilding the entire Docker image.
+      # Use ':ro' for read-only if the app doesn't modify the file.
+      - ./MASTER PLAYLIST.xml:/app/MASTER PLAYLIST.xml:ro
+      # --- ALTERNATIVE (If you frequently update JS/CSS/HTML too): ---
+      # Mount the entire current directory into the container's /app directory.
+      # This is great for development as changes on the host reflect immediately.
+      # Comment out the single file mount above if using this.
+      # - ./:/app
+    restart: unless-stopped # Optional: Restart container automatically if it stops unexpectedly

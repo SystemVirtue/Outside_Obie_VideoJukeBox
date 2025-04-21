@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jukebox Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container { max-width: 600px; margin: 40px auto; background: #222; padding: 24px; border-radius: 10px; color: #fff; box-shadow: 0 2px 12px #0006; }
+        .admin-title { font-size: 2em; margin-bottom: 18px; text-align: center; }
+        .admin-section { margin-bottom: 24px; }
+        .admin-section label { font-weight: bold; display: block; margin-bottom: 8px; }
+        .admin-section input, .admin-section select, .admin-section button { width: 100%; padding: 8px; margin-bottom: 8px; border-radius: 4px; border: none; }
+        .admin-section button { background: #d9534f; color: #fff; font-weight: bold; cursor: pointer; }
+        .admin-section button:hover { background: #b52a27; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-title">Jukebox Admin Panel</div>
+        <div class="admin-section">
+            <label for="content-select">Select Content to Display</label>
+            <select id="content-select">
+                <option value="all">All Content</option>
+                <option value="favourites">Favourites Only</option>
+                <option value="custom">Custom Selection</option>
+            </select>
+            <button id="apply-content">Apply</button>
+        </div>
+        <div class="admin-section">
+            <label for="settings">Other Settings</label>
+            <input type="text" id="settings" placeholder="e.g., Max Queue Length">
+            <button id="save-settings">Save Settings</button>
+        </div>
+        <!-- Placeholder for login form or more admin controls -->
+        <div class="admin-section">
+            <button id="logout">Logout</button>
+        </div>
+        <div id="admin-message"></div>
+    </div>
+    <script>
+        // Placeholder JS for admin actions (to be connected to backend endpoints)
+        document.getElementById('apply-content').onclick = function() {
+            document.getElementById('admin-message').textContent = 'Content selection applied (demo only).';
+        };
+        document.getElementById('save-settings').onclick = function() {
+            document.getElementById('admin-message').textContent = 'Settings saved (demo only).';
+        };
+        document.getElementById('logout').onclick = function() {
+            document.getElementById('admin-message').textContent = 'Logged out (demo only).';
+        };
+    </script>
+</body>
+</html>

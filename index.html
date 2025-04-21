@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OUTSIDE OBIE VIDEO JUKEBOX</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Grid Layout -->
+    <header class="grid-header">
+        <!-- Header Content Wrapper -->
+        <div class="header-content">
+            <!-- Main Title Area -->
+            <div class="header-title-area">
+                <span class="title-white">OUTSIDE OBIE</span><span class="title-red">VIDEO JUKEBOX</span>
+            </div>
+            <!-- Right Aligned Area -->
+            <div class="header-now-playing-area">
+                <span id="now-playing">NOW PLAYING: ---</span>
+                <button id="skip-button" disabled>SKIP</button>
+            </div>
+        </div>
+         <!-- Ticker Row (Separate Flex Container Below Main Content) -->
+        <div id="coming-up-ticker-container">
+            <div id="coming-up-ticker">COMING UP: ---</div>
+        </div>
+        <!-- End Header Content -->
+    </header>
+
+    <aside class="grid-sidebar">
+        <div id="letter-filter-container">
+            <div id="letter-col-1" class="letter-column"><!-- Buttons A-M --></div>
+            <div id="letter-col-2" class="letter-column"><!-- Buttons N-Z --></div>
+        </div>
+    </aside>
+
+    <main class="grid-main">
+        <div class="controls">
+            <div id="genre-filter-section">
+                <button id="genre-scroll-left" class="scroll-arrow" aria-label="Scroll genres left" disabled><</button>
+                <div id="genre-buttons-container"><!-- Genre buttons --></div>
+                <button id="genre-scroll-right" class="scroll-arrow" aria-label="Scroll genres right" disabled>></button>
+            </div>
+            <div id="status-message">Loading playlist...</div>
+        </div>
+        <div id="video-grid-container">
+            <div id="video-grid"><!-- Video tiles --></div>
+        </div>
+    </main>
+
+    <!-- Confirmation Popup -->
+    <div id="confirmation-popup-overlay" class="hidden">
+        <!-- ... Popup content as before ... -->
+        <div id="confirmation-popup">
+            <h2>Add to Queue?</h2>
+            <div id="popup-content">
+                <img id="popup-thumbnail" src="" alt="Video thumbnail">
+                <p id="popup-artist"></p>
+                <p id="popup-title"></p>
+            </div>
+            <div class="popup-buttons">
+                <button id="popup-no" class="popup-button no">NO</button>
+                <button id="popup-yes" class="popup-button yes">YES</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

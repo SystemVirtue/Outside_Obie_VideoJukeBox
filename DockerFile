@@ -1,0 +1,18 @@
+# Use an official Python runtime as a parent image
+FROM python:3.10-slim
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy all the application files from the host context (.) into the container's /app directory
+# This includes index.html, style.css, script.js, player.html, player.css, player.js, MASTER PLAYLIST.xml, etc.
+COPY . .
+
+# Inform Docker that the container listens on port 8000 at runtime
+EXPOSE 8000
+
+# Define the command to run the Python HTTP server when the container starts
+# -m http.server : Runs the built-in server module
+# 8000           : The port number inside the container
+# --bind 0.0.0.0 : Makes the server accessible from outside the container (listens on all interfaces)
+CMD ["python", "-m", "http.server", "8000", "--bind", "0.0.0.0"]
