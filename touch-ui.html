@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Touch UI Video Jukebox</title>
+  <link rel="stylesheet" href="touch-ui.css">
+</head>
+<body>
+  <!-- Title Frame -->
+  <header id="title-frame">
+    <span class="jukebox-name">VIDEO JUKEBOX</span>
+    <div class="now-playing-scroll"><span id="now-playing-text">Now Playing: ---</span></div>
+  </header>
+
+  <!-- Navigation Frame -->
+  <nav id="navigation-frame">
+    <button id="nav-scroll-left" class="nav-arrow" aria-label="Scroll left" style="display:none">&lt;</button>
+    <div id="nav-buttons-container"></div>
+    <button id="nav-scroll-right" class="nav-arrow" aria-label="Scroll right" style="display:none">&gt;</button>
+  </nav>
+
+  <!-- Grid Frame -->
+  <section id="grid-frame">
+    <div id="video-grid"></div>
+  </section>
+
+  <!-- Ticker Frame -->
+  <footer id="ticker-frame">
+    <div class="ticker-scroll" id="ticker-scroll-text">Coming Up: ---</div>
+  </footer>
+
+  <!-- Keyboard Overlay (hidden by default) -->
+  <div id="keyboard-overlay" style="display:none">
+    <input type="text" id="search-input" placeholder="Type to search...">
+    <div id="keyboard-keys"></div>
+    <button id="close-keyboard">Done</button>
+  </div>
+
+  <script src="touch-ui.js"></script>
+</body>
+</html>
