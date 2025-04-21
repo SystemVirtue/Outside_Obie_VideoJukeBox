@@ -29,25 +29,25 @@
           <div id="coming-up-ticker">COMING UP: ---</div>
         </div>
       </header>
-      <aside class="grid-sidebar">
-        <div id="letter-filter-container">
+      <div class="main-flex-row">
+        <nav id="letter-filter-container">
           <div id="letter-col-1" class="letter-column"></div>
           <div id="letter-col-2" class="letter-column"></div>
-        </div>
-      </aside>
-      <main class="grid-main">
-        <div class="controls">
-          <div id="genre-filter-section">
-            <button id="genre-scroll-left" class="scroll-arrow" aria-label="Scroll genres left" disabled><</button>
-            <div id="genre-buttons-container"></div>
-            <button id="genre-scroll-right" class="scroll-arrow" aria-label="Scroll genres right" disabled>></button>
+        </nav>
+        <main class="grid-main">
+          <div class="controls">
+            <div id="genre-filter-section">
+              <button id="genre-scroll-left" class="scroll-arrow" aria-label="Scroll genres left" disabled><</button>
+              <div id="genre-buttons-container"></div>
+              <button id="genre-scroll-right" class="scroll-arrow" aria-label="Scroll genres right" disabled>></button>
+            </div>
+            <div id="status-message">Loading playlist...</div>
           </div>
-          <div id="status-message">Loading playlist...</div>
-        </div>
-        <div id="video-grid-container">
-          <div id="video-grid"></div>
-        </div>
-      </main>
+          <div id="video-grid-container">
+            <div id="video-grid"></div>
+          </div>
+        </main>
+      </div>
       <div id="confirmation-popup-overlay" class="hidden">
         <div id="confirmation-popup">
           <h2>Add to Queue?</h2>
