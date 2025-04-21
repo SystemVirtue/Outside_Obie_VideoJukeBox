@@ -40,24 +40,106 @@ body {
   min-height: 220px;
 }
 @media (max-width: 600px) {
-  .grid-header, .grid-sidebar, .grid-main {
-    padding: 0.5em 0.5em;
+  html, body {
+    font-size: 18px;
+    padding: 0;
+    margin: 0;
+    width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .spa-nav {
+    flex-direction: row;
+    padding: 0;
+    position: fixed;
+    bottom: 0;
+    width: 100vw;
+    z-index: 1000;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
+  }
+  .spa-nav-btn {
+    font-size: 1.2em;
+    padding: 1em 0;
+    min-height: 56px;
+    border-radius: 0;
+    letter-spacing: 0.02em;
+  }
+  #spa-ui-section, #spa-player-section {
+    width: 100vw;
+    max-width: 100vw;
+    padding: 0.5em 0.2em 4em 0.2em; /* bottom padding for nav */
+    margin: 0;
+    box-sizing: border-box;
   }
   .header-title-area {
-    font-size: 1.2em;
+    font-size: 1.1em;
+    text-align: center;
+    padding: 0.3em 0;
+  }
+  .grid-header, .grid-main {
+    padding: 0.4em 0.2em;
   }
   #video-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+    padding: 0.5em;
+  }
+  .video-tile {
+    font-size: 1em;
+    min-height: 110px;
+    padding: 0.5em 0.2em;
+    border-radius: 8px;
+  }
+  .artist-name, .song-title {
+    font-size: 1.1em;
+    word-break: break-word;
   }
   #youtube-fullscreen-player {
-    min-height: 160px;
+    width: 100vw;
+    max-width: 100vw;
+    aspect-ratio: 16/9;
+    background: #000;
+    min-height: 140px;
+    margin-bottom: 1em;
+  }
+  .grid-sidebar {
+    display: none !important;
+  }
+  /* Touch-friendly skip button */
+  #skip-button {
+    font-size: 1.1em;
+    padding: 0.7em 1.2em;
+    margin-top: 0.5em;
+    border-radius: 8px;
+  }
+  /* Confirmation popup mobile */
+  #confirmation-popup {
+    width: 95vw;
+    min-width: unset;
+    max-width: 350px;
+    padding: 1em 0.5em;
+    font-size: 1.1em;
+  }
+  .popup-button {
+    font-size: 1.1em;
+    padding: 0.7em 1.4em;
+    margin: 0 0.5em;
   }
 }
+
 @media (min-width: 601px) {
   #video-grid {
     grid-template-columns: repeat(4, 1fr) !important;
   }
 }
+
+/* Hide sidebar on mobile */
+@media (max-width: 600px) {
+  .grid-sidebar {
+    display: none !important;
+  }
+}
+
 /* Hide sidebar on mobile */
 @media (max-width: 600px) {
   .grid-sidebar {
