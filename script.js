@@ -3,7 +3,8 @@ const OBIE_FAVOURITES_GENRE = "OBIE FAVOURITES"; // !! Ensure this matches your 
 const COMMAND_STORAGE_KEY = 'jukeboxCommand'; // Key for sending commands TO player
 const STATUS_STORAGE_KEY = 'jukeboxStatus';   // Key for receiving status FROM player
 const SCROLL_AMOUNT = 200; // For genre scrolling
-const FADE_DURATION_MS = 5000; // Duration info for player command
+// FADE_DURATION_MS is no longer used as fade is removed
+// const FADE_DURATION_MS = 5000; // Duration info for player command
 
 // --- State Variables ---
 let allVideos = [];
@@ -14,17 +15,19 @@ let currentlyPlayingVideoId = null; // Store ID of what we *told* player to play
 let currentlyPlayingVideoTitle = "---";
 let currentlyPlayingVideoArtist = "---";
 let pendingVideoToAdd = null; // Stores {id, title, artist, thumbnail} for popup
-let pendingSkipVideo = null; // Store video data for next track after skip fade
-let isDataLoaded = false; // Track if XML data is loaded
-let isAwaitingFadeComplete = false; // Track if we are waiting for fade to finish
-let currentlyPlayingIsFromQueue = false; // NEW: Track origin of current song
+
+// Removed skip and fade related state
+// let pendingSkipVideo = null; // Store video data for next track after skip fade
+// let isAwaitingFadeComplete = false; // Track if we are waiting for fade to finish
+// let currentlyPlayingIsFromQueue = false; // NEW: Track origin of current song (no longer needed for fade logic)
+
 
 // DOM Element References (cached in DOMContentLoaded)
 let videoGrid, statusMessage, letterFilterContainer, letterCol1, letterCol2,
     genreButtonsContainer, scrollLeftBtn, scrollRightBtn,
     confirmationPopupOverlay, confirmationPopup, popupThumbnail, popupArtist,
-    popupTitle, popupNoBtn, popupYesBtn, nowPlayingEl, comingUpTickerEl,
-    skipButtonEl; // Skip Button Element
+    popupTitle, popupNoBtn, popupYesBtn, nowPlayingEl, comingUpTickerEl;
+    // skipButtonEl is removed -> no longer needed
 
 
 // --- Send Command to Player Window ---
@@ -46,112 +49,66 @@ function startInitialPlayback() {
     console.log("DEBUG: [Jukebox] startInitialPlayback called (will send first command).");
     if (!isDataLoaded || !allVideos || allVideos.length === 0) {
         console.warn("DEBUG: [Jukebox] Cannot start playback, data not ready or empty.");
-        if(skipButtonEl) {
-             console.log("DEBUG: [Jukebox] Disabling skip button - no initial video.");
-             skipButtonEl.disabled = true;
-        }
         return;
     }
-    // --- Enable Button Here ---
-    if(skipButtonEl) {
-        console.log("DEBUG: [Jukebox] Enabling skip button - initial playback starting.");
-        skipButtonEl.disabled = false;
-    }
-    // --- End Enable ---
 
-    if (playlistQueue.length > 0) {
-        console.log("DEBUG: [Jukebox] Initial playback: Starting queue.");
-        playNextInQueueOrRandom(); // Sends the first command from queue
-    } else {
-        console.log("DEBUG: [Jukebox] Initial playback: Starting random favourites.");
-        playNextInQueueOrRandom(); // Let playNext handle getting random if queue empty
-    }
+    // Initial playback decision: Always defer to playNextInQueueOrRandom
+    console.log("DEBUG: [Jukebox] Initial playback: Deferring to playNextInQueueOrRandom.");
+    playNextInQueueOrRandom(); // Sends the first command (queue or random)
 }
 
 // Sends command for the next track (either queue or random)
-// Takes an optional parameter `isSkipRequest`
-function playNextInQueueOrRandom(isSkipRequest = false) {
-    console.log(`DEBUG: [Jukebox] playNextInQueueOrRandom called. isSkipRequest: ${isSkipRequest}`);
+// This function no longer handles skip requests. It only plays the *actual* next track.
+function playNextInQueueOrRandom() {
+    console.log("DEBUG: [Jukebox] playNextInQueueOrRandom called.");
     let nextVideo = null;
 
-    // --- Determine the next video source AND SET FLAG---
+    // --- Determine the next video source ---
     if (playlistQueue.length > 0) {
-        // Playing from queue
-        currentlyPlayingIsFromQueue = true; // <<< SET FLAG
-        if (isSkipRequest) { nextVideo = playlistQueue[0]; }
-        else { nextVideo = playlistQueue.shift(); }
-        console.log(`DEBUG: [Jukebox] Next video source: QUEUE (${isSkipRequest ? 'Peek' : 'Shift'}) - Title:`, nextVideo?.title);
-        updateComingUpTicker();
+        // Playing from queue: Always take from the front
+        nextVideo = playlistQueue.shift();
+        console.log("DEBUG: [Jukebox] Next video source: QUEUE (Shift) - Title:", nextVideo?.title);
+        updateComingUpTicker(); // Queue changed
     } else {
-        // Queue empty, play random
-        currentlyPlayingIsFromQueue = false; // <<< SET FLAG
+        // Queue empty, play random favourite
         console.log("DEBUG: [Jukebox] Queue empty, getting random favourite.");
         nextVideo = getRandomVideoDetails();
         console.log("DEBUG: [Jukebox] Random video selected:", nextVideo?.title);
-        updateComingUpTicker(); // Clear ticker
+        updateComingUpTicker(); // Ensure ticker is empty
     }
     // --- End Determine next video source ---
 
 
     // --- Check if a valid next video was found ---
     if (!nextVideo || !nextVideo.id) {
-        console.warn("DEBUG: [Jukebox] No valid next video found (Queue Empty or Random Failed).");
-         if(skipButtonEl) {
-             console.log("DEBUG: [Jukebox] Disabling skip button - no valid next video found.");
-             skipButtonEl.disabled = true; // Disable if nothing found to play
-         }
+        console.warn("DEBUG: [Jukebox] No valid next video found (Queue Empty or Random Failed). Stopping player?).");
          // Optional: Send stop command if nothing is playing?
-         if (!currentlyPlayingVideoId) {
+         if (currentlyPlayingVideoId) { // Only send stop if something was thought to be playing
              sendCommandToPlayer({ action: 'stop' });
+             currentlyPlayingVideoId = null;
              updateNowPlaying("---","---");
+         } else {
+             updateNowPlaying("---","---"); // Ensure UI reflects no song
          }
         return; // Stop execution here
     }
     // --- End Check ---
 
+    // --- Always send PLAY command for the determined next video ---
+    console.log("DEBUG: [Jukebox] Sending PLAY command for:", nextVideo.artist, "-", nextVideo.title);
+    sendCommandToPlayer({
+        action: 'play',
+        videoId: nextVideo.id,
+        title: nextVideo.title,
+        artist: nextVideo.artist
+    });
 
-    // --- Handle Skip Request vs Normal Playback ---
-    if (isSkipRequest && currentlyPlayingVideoId) {
-        // User clicked SKIP and something was playing
-        console.log("DEBUG: [Jukebox] Skip requested. Storing next video and sending fadeOut command.");
-        pendingSkipVideo = nextVideo; // Store details of the track to play *after* fade
-        sendCommandToPlayer({
-            action: 'fadeOutAndBlack',
-            fadeDuration: FADE_DURATION_MS
-        });
-        isAwaitingFadeComplete = true; // Set flag to wait for player
-        if(skipButtonEl) skipButtonEl.disabled = true; // Disable skip during fade
-    } else {
-        // Normal playback: End of track, initial load, or skip when nothing playing
-        console.log("DEBUG: [Jukebox] Normal play/end of track. Sending PLAY command for:", nextVideo.artist, "-", nextVideo.title);
-        // --- Enable button on normal play ---
-        if(skipButtonEl) skipButtonEl.disabled = false;
-        // --- End Enable ---
-
-        // If this wasn't a skip but came from the queue, ensure it's removed (it should have been shifted already)
-        if (!isSkipRequest && playlistQueue.length >= 0) { // Need to handle peeking case for skip
-            // Check if the video we are about to play is STILL at the front (meaning it was peeked during skip)
-            if (playlistQueue[0]?.id === nextVideo.id) {
-                console.log("DEBUG: [Jukebox] Removing peeked item from queue before playing.");
-                playlistQueue.shift();
-                updateComingUpTicker();
-            }
-        }
-
-        // Send PLAY command
-        sendCommandToPlayer({
-            action: 'play',
-            videoId: nextVideo.id,
-            title: nextVideo.title,
-            artist: nextVideo.artist
-        });
-        // Update local state immediately
-        currentlyPlayingVideoId = nextVideo.id;
-        currentlyPlayingVideoArtist = nextVideo.artist;
-        currentlyPlayingVideoTitle = nextVideo.title;
-        updateNowPlaying(currentlyPlayingVideoArtist, currentlyPlayingVideoTitle);
-        // Ticker already updated when item was shifted/peeked
-    }
+    // Update local state immediately
+    currentlyPlayingVideoId = nextVideo.id;
+    currentlyPlayingVideoArtist = nextVideo.artist;
+    currentlyPlayingVideoTitle = nextVideo.title;
+    updateNowPlaying(currentlyPlayingVideoArtist, currentlyPlayingVideoTitle);
+    // Ticker updated when item was shifted/randomized
 }
 
 
@@ -167,13 +124,14 @@ function getRandomVideoDetails() {
     return null;
 }
 
-// Calls playNextInQueueOrRandom which handles sending the command if queue empty
-function startRandomPlayback() {
-    console.log("DEBUG: [Jukebox] startRandomPlayback called (will defer to playNext).");
-    playNextInQueueOrRandom();
-}
+// Removed startRandomPlayback as playNextInQueueOrRandom handles random when queue is empty
+// function startRandomPlayback() {
+//     console.log("DEBUG: [Jukebox] startRandomPlayback called (will defer to playNext).");
+//     playNextInQueueOrRandom();
+// }
 
-// --- Queue Management (Refined Fade Condition AGAIN) ---
+
+// --- Queue Management ---
 
 function addToQueue(videoData) {
     console.log("DEBUG: [Jukebox] addToQueue called with:", videoData);
@@ -183,36 +141,18 @@ function addToQueue(videoData) {
     console.log(`DEBUG: [Jukebox] Adding to queue: ${videoInfo.artist} - ${videoInfo.title} (${videoInfo.id})`);
 
     const wasQueueEmpty = playlistQueue.length === 0;
-    const isCurrentlyPlaying = currentlyPlayingVideoId !== null;
+    const wasCurrentlyPlaying = currentlyPlayingVideoId !== null; // Check state *before* adding
 
-    // --- REVISED Condition using Flag ---
-    // Fade ONLY if: Queue WAS empty AND something IS playing AND that playing item was NOT from the queue (i.e., it was random)
-    const shouldFadeRandomTrack = wasQueueEmpty && isCurrentlyPlaying && !currentlyPlayingIsFromQueue;
-    console.log(`DEBUG: [Jukebox] addToQueue check: wasQueueEmpty=${wasQueueEmpty}, isCurrentlyPlaying=${isCurrentlyPlaying}, currentlyPlayingIsFromQueue=${currentlyPlayingIsFromQueue}, shouldFade=${shouldFadeRandomTrack}`);
+    playlistQueue.push(videoInfo); // Always add to the end
+    updateComingUpTicker();
 
-    if (shouldFadeRandomTrack) {
-        // Scenario: Queue was empty, random WAS playing -> Fade & Prepend
-        console.log("DEBUG: [Jukebox] Condition met: First item added while random playing. Sending fadeOutAndBlack command.");
-        playlistQueue.unshift(videoInfo); // Add to FRONT
-        updateComingUpTicker();
-        sendCommandToPlayer({ action: 'fadeOutAndBlack', fadeDuration: FADE_DURATION_MS });
-        isAwaitingFadeComplete = true;
-        if(skipButtonEl) skipButtonEl.disabled = true;
+    // If queue was empty AND nothing was playing, start playback immediately.
+    // If queue was NOT empty OR something *was* playing, just add to queue and wait for current song to end naturally.
+    if (wasQueueEmpty && !wasCurrentlyPlaying) {
+        console.log("DEBUG: [Jukebox] Queue was empty and nothing playing, sending play command for first item.");
+        playNextInQueueOrRandom(); // This will shift and play the item just added
     } else {
-        // Scenario:
-        // 1. Queue already has items (add to end)
-        // 2. Queue was empty AND nothing was playing (add to end, start play)
-        // 3. Queue was empty BUT the currently playing item *was* from the queue (just finished fade?) -> (add to end) - This case shouldn't happen often due to state flow, but covered.
-        playlistQueue.push(videoInfo); // Add to END
-        updateComingUpTicker();
-
-        // If queue WAS empty AND nothing was playing before this add, start the queue now.
-        if (wasQueueEmpty && !isCurrentlyPlaying) {
-            console.log("DEBUG: [Jukebox] Queue was empty and nothing playing, sending play command for first item.");
-            playNextInQueueOrRandom(); // This will play the item just added
-        } else {
-             console.log("DEBUG: [Jukebox] Added item to non-empty queue or while queue item was playing. Sequence continues.");
-        }
+         console.log("DEBUG: [Jukebox] Added item to non-empty queue or while song was playing. Sequence continues naturally.");
     }
 }
 
@@ -230,10 +170,12 @@ function updateComingUpTicker() {
     const upcomingItemsHTML = playlistQueue.slice(0, 5).map(v => `<span class="artist">${v.artist || 'N/A'}</span><span class="separator">-</span><span class="title">${v.title || 'N/A'}</span>`).join('<span class="upcoming-separator">...</span>');
     comingUpTickerEl.innerHTML = `COMING UP: ${upcomingItemsHTML}`;
     comingUpTickerEl.classList.remove('empty', 'animated');
-    void comingUpTickerEl.offsetWidth; // Trigger reflow
+    // This little trick forces a reflow, restarting CSS animation
+    void comingUpTickerEl.offsetWidth;
     comingUpTickerEl.classList.add('animated');
-     if (comingUpTickerEl.style.animationName !== 'none') { comingUpTickerEl.style.animation = 'none'; setTimeout(()=>{ comingUpTickerEl.style.animation = ''; }, 10); }
-     else { comingUpTickerEl.classList.remove('empty'); }
+    // Alternative restart for more complex cases, but reflow is usually sufficient
+    // if (comingUpTickerEl.style.animationName !== 'none') { comingUpTickerEl.style.animation = 'none'; setTimeout(()=>{ comingUpTickerEl.style.animation = ''; }, 10); }
+    // else { comingUpTickerEl.classList.remove('empty'); }
 }
 function showConfirmationPopup(videoData) {
     if (!videoData || !confirmationPopupOverlay) return;
@@ -348,67 +290,38 @@ function handlePlayerStatusUpdate(event) {
             // --- Handle different statuses ---
             if (statusData.status === 'ended') {
                 console.log("DEBUG: [Jukebox] Player reported video ended (ID:", statusData.id, "). Playing next.");
-                 if (isAwaitingFadeComplete) {
-                     console.warn("[Jukebox] Received 'ended' while awaiting fade complete. Ignoring, waiting for fade signal.");
-                     return; // Don't play next if fade hasn't finished
-                 }
-                 if (currentlyPlayingVideoId && statusData.id && statusData.id !== currentlyPlayingVideoId) {
-                     console.warn(`[Jukebox] Player ended video (${statusData.id}) but Jukebox thought (${currentlyPlayingVideoId}) was playing.`);
-                 }
-                currentlyPlayingVideoId = null; // Clear current video ID
-                if(skipButtonEl) skipButtonEl.disabled = false; // Re-enable skip on normal end
-                playNextInQueueOrRandom(); // Trigger next playback command
+                 // isAwaitingFadeComplete check removed as fade is removed
+                 // pendingSkipVideo logic removed as skip is removed
 
-            } else if (statusData.status === 'fadeComplete') {
-                 console.log("DEBUG: [Jukebox] Player reported fade complete. Playing next track.");
-                 isAwaitingFadeComplete = false; // Clear wait flag
-                 if(skipButtonEl) skipButtonEl.disabled = false; // Re-enable skip button
-
-                 currentlyPlayingVideoId = null; // Clear ID of faded track
-
-                 if (pendingSkipVideo) {
-                     // --- Play the video that was stored during the skip request ---
-                     console.log("[Jukebox] Fade complete was for a skip. Playing pending video:", pendingSkipVideo.title);
-                     const videoToPlay = pendingSkipVideo;
-                     pendingSkipVideo = null; // Clear pending skip
-
-                     // Remove the item from queue *if* it was the one we skipped to AND it's still at the front
-                     if (playlistQueue.length > 0 && playlistQueue[0]?.id === videoToPlay.id) {
-                         console.log("[Jukebox] Removing skipped-to item from queue front.");
-                         playlistQueue.shift();
-                         updateComingUpTicker();
-                     }
-
-                     // Send PLAY command for the skipped-to video
-                     sendCommandToPlayer({ action: 'play', videoId: videoToPlay.id, title: videoToPlay.title, artist: videoToPlay.artist });
-                     currentlyPlayingVideoId = videoToPlay.id;
-                     currentlyPlayingVideoArtist = videoToPlay.artist;
-                     currentlyPlayingVideoTitle = videoToPlay.title;
-                     updateNowPlaying(currentlyPlayingVideoArtist, currentlyPlayingVideoTitle);
-                     if(skipButtonEl) skipButtonEl.disabled = false; // Ensure enabled after playing
-
+                 // If the ended video matches the one we *thought* was playing, clear it
+                 if (currentlyPlayingVideoId && statusData.id === currentlyPlayingVideoId) {
+                     currentlyPlayingVideoId = null; // Clear current video ID
+                 } else if (currentlyPlayingVideoId && statusData.id !== currentlyPlayingVideoId) {
+                     console.warn(`[Jukebox] Player ended video (${statusData.id}) but Jukebox thought (${currentlyPlayingVideoId}) was playing. Clearing current ID anyway.`);
+                     currentlyPlayingVideoId = null;
                  } else {
-                      // --- Fade complete was likely from adding first queue item ---
-                      console.log("[Jukebox] Fade complete was likely for queue add. Playing next from queue.");
-                      playNextInQueueOrRandom(); // This will play the first item (already unshifted)
+                     console.warn("[Jukebox] Player ended video, but Jukebox didn't think anything was playing?");
                  }
+
+                // Play the next video in the queue (or random if queue is empty)
+                playNextInQueueOrRandom();
 
             } else if (statusData.status === 'error') {
                  console.error(`DEBUG: [Jukebox] Player reported error Code: ${statusData.code}, Msg: ${statusData.message}, ID: ${statusData.id}`);
                  // Reset state and try next on error
-                 isAwaitingFadeComplete = false;
-                 pendingSkipVideo = null;
-                 if(skipButtonEl) skipButtonEl.disabled = false; // Re-enable skip
+                 // isAwaitingFadeComplete removed
+                 // pendingSkipVideo removed
 
                  if(currentlyPlayingVideoId && statusData.id === currentlyPlayingVideoId) {
                      console.log("[Jukebox] Error occurred on current track, attempting to play next.");
-                     currentlyPlayingVideoId = null;
+                     currentlyPlayingVideoId = null; // Clear the error track
                      setTimeout(() => playNextInQueueOrRandom(), 1000); // Delay before trying next
                  } else {
                       console.log("[Jukebox] Player error unrelated to current track? Ignoring for playback sequence.");
                  }
             }
-            // --- End Handle statuses ---
+            // --- Removed fadeComplete handler ---
+            // else if (statusData.status === 'fadeComplete') { ... }
 
         } catch (e) { console.error("DEBUG: [Jukebox] Error parsing status from storage event:", e); }
     } else if (event.key === STATUS_STORAGE_KEY) {
@@ -423,26 +336,17 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("DEBUG: [Jukebox] DOMContentLoaded event fired.");
     // Cache DOM elements
     videoGrid = document.getElementById('video-grid'); statusMessage = document.getElementById('status-message'); letterFilterContainer = document.getElementById('letter-filter-container'); letterCol1 = document.getElementById('letter-col-1'); letterCol2 = document.getElementById('letter-col-2'); genreButtonsContainer = document.getElementById('genre-buttons-container'); scrollLeftBtn = document.getElementById('genre-scroll-left'); scrollRightBtn = document.getElementById('genre-scroll-right'); confirmationPopupOverlay = document.getElementById('confirmation-popup-overlay'); confirmationPopup = document.getElementById('confirmation-popup'); popupThumbnail = document.getElementById('popup-thumbnail'); popupArtist = document.getElementById('popup-artist'); popupTitle = document.getElementById('popup-title'); popupNoBtn = document.getElementById('popup-no'); popupYesBtn = document.getElementById('popup-yes'); nowPlayingEl = document.getElementById('now-playing'); comingUpTickerEl = document.getElementById('coming-up-ticker');
-    skipButtonEl = document.getElementById('skip-button'); // Cache skip button
+    // skipButtonEl is removed from HTML -> no need to cache
 
-    // Check essential elements
-    const essentialElements = { videoGrid, statusMessage, letterFilterContainer, genreButtonsContainer, confirmationPopupOverlay, nowPlayingEl, comingUpTickerEl, skipButtonEl}; let allElementsFound = true; for(const key in essentialElements) { if (!essentialElements[key]) { console.error(`DEBUG: [Jukebox] Essential element not found: ${key}`); allElementsFound = false; } } if (!allElementsFound) { if(statusMessage) statusMessage.textContent = "Init Error."; return; }
+    // Check essential elements (skipButtonEl removed from check)
+    const essentialElements = { videoGrid, statusMessage, letterFilterContainer, genreButtonsContainer, confirmationPopupOverlay, nowPlayingEl, comingUpTickerEl}; let allElementsFound = true; for(const key in essentialElements) { if (!essentialElements[key]) { console.error(`DEBUG: [Jukebox] Essential element not found: ${key}`); allElementsFound = false; } } if (!allElementsFound) { if(statusMessage) statusMessage.textContent = "Init Error."; return; }
 
     // Setup Initial UI Elements
     createLetterButtons();
-    if(skipButtonEl) skipButtonEl.disabled = true; // Start disabled
+    // skipButtonEl disabling removed
 
     // --- Event Listeners ---
-    if(skipButtonEl) skipButtonEl.addEventListener('click', () => {
-        console.log("DEBUG: [Jukebox] SKIP button clicked.");
-        if (isAwaitingFadeComplete) { // Only check fade flag now
-            console.log("DEBUG: [Jukebox] Skip ignored, waiting for fade complete.");
-            return;
-        }
-        // Allow skip even if nothing is technically "playing" according to Jukebox state,
-        // as long as we're not already mid-fade. Player handles empty state.
-        playNextInQueueOrRandom(true); // Pass true for isSkipRequest
-    });
+    // Skip button event listener removed
 
     if(popupNoBtn) popupNoBtn.addEventListener('click', hideConfirmationPopup);
     if(popupYesBtn) popupYesBtn.addEventListener('click', () => { if (pendingVideoToAdd) addToQueue(pendingVideoToAdd); hideConfirmationPopup(); });
